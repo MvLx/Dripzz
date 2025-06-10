@@ -1,5 +1,7 @@
 package com.example.dripz.adapter;
 
+import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,8 +45,7 @@ public class PlaceAdapter extends RecyclerView.Adapter<PlaceAdapter.PlaceViewHol
                 place.categories != null && place.categories.size() > 0 ?
                         place.categories.get(0).name : "-"
         );
-        // Load photo dari Foursquare endpoint
-        holder.ivPhoto.setImageResource(R.drawable.placeholder); // Buat placeholder image di drawable
+        holder.ivPhoto.setImageResource(R.drawable.placeholder);
         FoursquareApi api = RetrofitClient.getFoursquareApi();
         api.getPlacePhotos(API_KEY, place.fsq_id, 1)
                 .enqueue(new Callback<List<PhotoResponse>>() {
@@ -52,21 +53,39 @@ public class PlaceAdapter extends RecyclerView.Adapter<PlaceAdapter.PlaceViewHol
                     public void onResponse(Call<List<PhotoResponse>> call, Response<List<PhotoResponse>> response) {
                         if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                             PhotoResponse photo = response.body().get(0);
-                            String photoUrl = photo.prefix + "original" + photo.suffix;
-                            Glide.with(holder.itemView.getContext())
-                                    .load(photoUrl)
-                                    .placeholder(R.drawable.placeholder)
-                                    .into(holder.ivPhoto);
+                            String prefix = photo.prefix != null ? photo.prefix : "";
+                            String suffix = photo.suffix != null ? photo.suffix : "";
+                            // Pastikan prefix ada slash di akhir, suffix ada slash di awal (Foursquare biasanya sudah benar, tapi jaga-jaga)
+                            if (!prefix.endsWith("/")) prefix += "/";
+                            if (!suffix.startsWith("/")) suffix = "/" + suffix;
+                            String photoUrl = prefix + "original" + suffix;
+                            android.util.Log.d("PHOTO", "Photo URL: " + photoUrl);
+
+                            // Cek context valid sebelum load Glide (optional, jaga-jaga)
+                            if (holder.itemView.getContext() != null) {
+                                Glide.with(holder.itemView.getContext())
+                                        .load(photoUrl)
+                                        .placeholder(R.drawable.placeholder)
+                                        .error(R.drawable.placeholder)
+                                        .into(holder.ivPhoto);
+                            }
                         } else {
-                            // Tidak ada foto, gunakan placeholder
                             holder.ivPhoto.setImageResource(R.drawable.placeholder);
+                            android.util.Log.e("PHOTO", "Photo API empty or not successful: " + response.message());
                         }
                     }
                     @Override
                     public void onFailure(Call<List<PhotoResponse>> call, Throwable t) {
                         holder.ivPhoto.setImageResource(R.drawable.placeholder);
+                        android.util.Log.e("PHOTO", "API call failed: " + t.getMessage());
                     }
                 });
+        holder.itemView.setOnClickListener(v -> {
+            Context ctx = v.getContext();
+            Intent intent = new Intent(ctx, com.example.dripz.ui.detail.DetailPlaceActivity.class);
+            intent.putExtra("fsq_id", place.fsq_id);
+            ctx.startActivity(intent);
+        });
     }
 
     @Override

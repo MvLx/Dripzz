@@ -1,6 +1,7 @@
 package com.example.dripz.network;
 
 import com.example.dripz.model.PhotoResponse;
+import com.example.dripz.model.PlaceDetailResponse;
 import com.example.dripz.model.PlacesResponse;
 import retrofit2.Call;
 import retrofit2.http.GET;
@@ -21,5 +22,10 @@ public interface FoursquareApi {
             @Header("Authorization") String apiKey,
             @Path("fsq_id") String fsqId,
             @Query("limit") int limit
+    );
+    @GET("places/{fsq_id}")
+    Call<PlaceDetailResponse> getPlaceDetail(
+            @Header("Authorization") String apiKey,
+            @Path("fsq_id") String fsqId
     );
 }
