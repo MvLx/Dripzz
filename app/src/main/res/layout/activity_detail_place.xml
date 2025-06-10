@@ -1,76 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:padding="16dp">
-    <LinearLayout
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Image View for Photo -->
+    <ImageView
+        android:id="@+id/ivPhoto"
         android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:layout_height="wrap_content">
+        android:layout_height="200dp"
+        android:scaleType="centerCrop"
+        android:layout_marginBottom="12dp"
+        app:layout_constraintTop_toBottomOf="@id/progressBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:visibility="gone"/>
+    <!-- Text for Name -->
+    <TextView
+        android:id="@+id/tvName"
+        android:textStyle="bold"
+        android:textSize="22sp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        app:layout_constraintTop_toBottomOf="@id/ivPhoto"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <ImageView
-            android:id="@+id/ivPhoto"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:scaleType="centerCrop"
-            android:layout_marginBottom="12dp"
-            android:src="@drawable/placeholder"/>
+    <!-- Text for Address -->
+    <TextView
+        android:id="@+id/tvAddress"
+        android:textSize="16sp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        app:layout_constraintTop_toBottomOf="@id/tvName"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView android:id="@+id/tvName"
-            android:textStyle="bold"
-            android:textSize="22sp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"/>
+    <!-- Text for Category -->
+    <TextView
+        android:id="@+id/tvCategory"
+        android:textSize="16sp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        app:layout_constraintTop_toBottomOf="@id/tvAddress"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView android:id="@+id/tvAddress"
-            android:textSize="16sp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"/>
+    <!-- Text for Description -->
+    <TextView
+        android:id="@+id/tvDesc"
+        android:text="Deskripsi"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:textSize="16sp"
+        app:layout_constraintTop_toBottomOf="@id/tvCategory"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView android:id="@+id/tvCategory"
-            android:textSize="16sp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"/>
+    <!-- Text for Website -->
+    <TextView
+        android:id="@+id/tvWebsite"
+        android:text="Website"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:textSize="16sp"
+        app:layout_constraintTop_toBottomOf="@id/tvDesc"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView
-            android:id="@+id/tvDesc"
-            android:text="Deskripsi"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:textSize="16sp"/>
+    <!-- Text for Opening Hours -->
+    <TextView
+        android:id="@+id/tvJamBuka"
+        android:text="Jam buka"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        app:layout_constraintTop_toBottomOf="@id/tvWebsite"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView
-            android:id="@+id/tvWebsite"
-            android:text="Website"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            android:textSize="16sp"/>
-
-        <TextView
-            android:id="@+id/tvJamBuka"
-            android:text="Jam buka"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="16sp"/>
-
-        <Button
-            android:id="@+id/btnRetry"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Coba Lagi"
-            android:visibility="gone"
-            android:layout_marginTop="16dp"/>
-    </LinearLayout>
-</ScrollView>
+    <!-- Retry Button -->
+    <Button
+        android:id="@+id/btnRetry"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Coba Lagi"
+        android:visibility="visible"
+        android:layout_margin="16dp"
+        android:backgroundTint="@color/white"
+        android:textColor="@android:color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

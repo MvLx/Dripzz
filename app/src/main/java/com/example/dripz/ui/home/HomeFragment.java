@@ -29,7 +29,7 @@ import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
     private EditText etLocation;
-    private Button btnSearch;
+    private Button btnSearch, btnRetryHome;
     private RecyclerView rvCities, rvPlaces;
     private PlaceAdapter placeAdapter;
     private CityAdapter cityAdapter;
@@ -38,7 +38,6 @@ public class HomeFragment extends Fragment {
     private final String API_KEY = "fsq3a4FzRMpB8kLrNHnB8bJgY+nTbIDEOtk7088yl5pCI4A=";
     private final String DEFAULT_CATEGORY = "16000,13000,13065,14000,17000,18000,13027,17069,16013,19014";
 
-    // Sekarang cityList pakai nama kota, bukan latlon
     private final List<City> cityList = Arrays.asList(
             new City("Jakarta", "Jakarta"),
             new City("Bandung", "Bandung"),
@@ -52,6 +51,7 @@ public class HomeFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         etLocation = view.findViewById(R.id.etLocation);
         btnSearch = view.findViewById(R.id.btnSearch);
+        btnRetryHome = view.findViewById(R.id.btnRetryHome);
         rvCities = view.findViewById(R.id.rvCities);
         rvPlaces = view.findViewById(R.id.rvPlaces);
 
@@ -75,8 +75,22 @@ public class HomeFragment extends Fragment {
                 etLocation.setError("Isi nama daerah dulu");
                 return;
             }
+            btnRetryHome.setVisibility(View.GONE);
             searchByLocationName(locationName);
         });
+
+        btnRetryHome.setOnClickListener(v -> {
+            btnRetryHome.setVisibility(View.GONE);
+            // Default: cari kota pertama di daftar
+            if (!cityList.isEmpty()) {
+                searchByLocationName(cityList.get(0).name);
+            }
+        });
+
+        // Optional: load default city on start
+        if (!cityList.isEmpty()) {
+            searchByLocationName(cityList.get(0).name);
+        }
 
         return view;
     }
@@ -93,12 +107,14 @@ public class HomeFragment extends Fragment {
                         } else {
                             Toast.makeText(getContext(), "Daerah tidak ditemukan", Toast.LENGTH_SHORT).show();
                             Log.e("Geo", "Geo response: " + response.body());
+                            btnRetryHome.setVisibility(View.VISIBLE);
                         }
                     }
                     @Override
                     public void onFailure(Call<List<GeocodingResponse>> call, Throwable t) {
                         Toast.makeText(getContext(), "Gagal mencari lokasi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                         Log.e("Geo", "Geo error: ", t);
+                        btnRetryHome.setVisibility(View.VISIBLE);
                     }
                 });
     }
@@ -114,12 +130,14 @@ public class HomeFragment extends Fragment {
                         } else {
                             Toast.makeText(getContext(), "Data tidak ditemukan", Toast.LENGTH_SHORT).show();
                             Log.e("FSQ", "FSQ response: " + response.body());
+                            btnRetryHome.setVisibility(View.VISIBLE);
                         }
                     }
                     @Override
                     public void onFailure(Call<PlacesResponse> call, Throwable t) {
                         Toast.makeText(getContext(), "Gagal load data: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                         Log.e("FSQ", "FSQ error: ", t);
+                        btnRetryHome.setVisibility(View.VISIBLE);
                     }
                 });
     }
