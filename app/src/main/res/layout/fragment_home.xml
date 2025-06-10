@@ -18,7 +18,7 @@
 
     <EditText
         android:id="@+id/etLocation"
-        android:hint="Masukkan lokasi (lat,lon)"
+        android:hint="Masukkan lokasi"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
