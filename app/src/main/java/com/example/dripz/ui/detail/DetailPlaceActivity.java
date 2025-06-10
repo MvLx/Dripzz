@@ -1,32 +1,41 @@
 package com.example.dripz.ui.detail;
 
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.view.View;
-import android.widget.ProgressBar;
-import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.List;
-
 import com.bumptech.glide.Glide;
 import com.example.dripz.R;
-import com.example.dripz.model.PhotoResponse;
+import com.example.dripz.db.DBHelper;
 import com.example.dripz.model.PlaceDetailResponse;
+import com.example.dripz.model.PlaceDetailResponse.Photo;
+import com.example.dripz.model.Place;
+import com.example.dripz.model.Category;
+import com.example.dripz.model.Hours;
+import com.example.dripz.model.Location;
 import com.example.dripz.network.FoursquareApi;
 import com.example.dripz.network.RetrofitClient;
+
+import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class DetailPlaceActivity extends AppCompatActivity {
-    private TextView tvName, tvAddress, tvCategory, tvDesc, tvWebsite, tvJamBuka;
+
+    private TextView tvName, tvAddress, tvCategory, tvHours;
     private ImageView ivPhoto;
-    private ProgressBar progressBar;
-    private Button btnRetry;
+    private Button btnFavorite;
+    private DBHelper dbHelper;
+    private boolean isFavorite = false;
+    private PlaceDetailResponse placeDetailResponse;
+    private Place favPlaceObj;
+    private String namaKota = "";
 
     private final String API_KEY = "fsq3a4FzRMpB8kLrNHnB8bJgY+nTbIDEOtk7088yl5pCI4A=";
 
@@ -38,105 +47,126 @@ public class DetailPlaceActivity extends AppCompatActivity {
         tvName = findViewById(R.id.tvName);
         tvAddress = findViewById(R.id.tvAddress);
         tvCategory = findViewById(R.id.tvCategory);
-        tvDesc = findViewById(R.id.tvDesc);
-        tvWebsite = findViewById(R.id.tvWebsite);
-        tvJamBuka = findViewById(R.id.tvJamBuka);
+        tvHours = findViewById(R.id.tvHours);
         ivPhoto = findViewById(R.id.ivPhoto);
-        progressBar = findViewById(R.id.progressBar);
-        btnRetry = findViewById(R.id.btnRetry);
+        btnFavorite = findViewById(R.id.btnFavorite);
 
-        String fsqId = getIntent().getStringExtra("fsq_id");
-        if (fsqId == null) {
-            finish();
-            return;
-        }
+        dbHelper = new DBHelper(this);
 
-        loadDetail(fsqId);
+        String fsq_id = getIntent().getStringExtra("fsq_id");
+        namaKota = getIntent().getStringExtra("nama_kota") != null ? getIntent().getStringExtra("nama_kota") : "";
 
-        btnRetry.setOnClickListener(v -> {
-            progressBar.setVisibility(View.VISIBLE);
-            btnRetry.setVisibility(View.GONE);
-            loadDetail(fsqId);
+        loadPlaceDetail(fsq_id);
+    }
+
+    private void loadPlaceDetail(String fsq_id) {
+        isFavorite = dbHelper.isFavorite(fsq_id);
+
+        FoursquareApi api = RetrofitClient.getFoursquareApi();
+        api.getPlaceDetail(API_KEY, fsq_id).enqueue(new Callback<PlaceDetailResponse>() {
+            @Override
+            public void onResponse(Call<PlaceDetailResponse> call, Response<PlaceDetailResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    placeDetailResponse = response.body();
+                    showDetail(placeDetailResponse);
+                    setFavoriteButton();
+                } else {
+                    Toast.makeText(DetailPlaceActivity.this, "Gagal mendapatkan detail tempat", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<PlaceDetailResponse> call, Throwable t) {
+                Toast.makeText(DetailPlaceActivity.this, "Gagal koneksi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                finish();
+            }
         });
     }
 
-    private void loadDetail(String fsqId) {
-        progressBar.setVisibility(View.VISIBLE);
-        btnRetry.setVisibility(View.GONE);
+    private void showDetail(PlaceDetailResponse place) {
+        tvName.setText(place.name != null ? place.name : "-");
+        tvAddress.setText((place.location != null && place.location.address != null) ? place.location.address : "-");
 
-        FoursquareApi api = RetrofitClient.getFoursquareApi();
-        api.getPlaceDetail(API_KEY, fsqId)
-            .enqueue(new Callback<PlaceDetailResponse>() {
-                @Override
-                public void onResponse(Call<PlaceDetailResponse> call, Response<PlaceDetailResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        PlaceDetailResponse detail = response.body();
+        String categoryName = "-";
+        if (place.categories != null && !place.categories.isEmpty() && place.categories.get(0) != null) {
+            categoryName = place.categories.get(0).name != null ? place.categories.get(0).name : "-";
+        }
+        tvCategory.setText(categoryName);
 
-                        tvName.setText(detail.name != null ? detail.name : "-");
-                        tvAddress.setText(detail.location != null && detail.location.address != null ? detail.location.address : "-");
-                        tvCategory.setText(
-                            detail.categories != null && !detail.categories.isEmpty() && detail.categories.get(0).name != null
-                                ? detail.categories.get(0).name : "-"
-                        );
-                        tvDesc.setText(detail.description != null ? detail.description : "Deskripsi tidak tersedia dari API");
-                        tvWebsite.setText(detail.website != null ? detail.website : "Website tidak tersedia dari API");
-                        // Jam buka: tampilkan jam buka jika ada, jika tidak tampilkan "-"
-                        if (detail.hours != null && detail.hours.open != null && !detail.hours.open.isEmpty()) {
-                            StringBuilder jamBuka = new StringBuilder();
-                            for (PlaceDetailResponse.Hours.Open open : detail.hours.open) {
-                                jamBuka.append(open.day != null ? open.day + ": " : "");
-                                jamBuka.append(open.rendered_time != null ? open.rendered_time : "-");
-                                jamBuka.append("\n");
-                            }
-                            tvJamBuka.setText(jamBuka.toString().trim());
-                        } else if (detail.hours != null && detail.hours.is_open) {
-                            tvJamBuka.setText("Buka");
-                        } else {
-                            tvJamBuka.setText("-");
-                        }
-                    }
-                    // Setelah detail, lanjut ambil foto
-                    loadPhoto(fsqId);
-                }
+        // Jam buka
+        String jamBuka = "-";
+        if (place.hours != null && place.hours.open != null && !place.hours.open.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (PlaceDetailResponse.Hours.Open open : place.hours.open) {
+                sb.append((open.day != null ? open.day : "")).append(" ").append((open.rendered_time != null ? open.rendered_time : "")).append("\n");
+            }
+            jamBuka = sb.toString().trim();
+        }
+        tvHours.setText(jamBuka);
 
-                @Override
-                public void onFailure(Call<PlaceDetailResponse> call, Throwable t) {
-                    // Jika gagal, tetap coba ambil foto, tampilkan tombol retry
-                    loadPhoto(fsqId);
-                    btnRetry.setVisibility(View.VISIBLE);
-                }
-            });
+        // Load photo
+        if (place.photos != null && !place.photos.isEmpty()) {
+            Photo photo = place.photos.get(0);
+            if (photo.prefix != null && photo.suffix != null) {
+                String url = photo.prefix + "original" + photo.suffix;
+                Glide.with(this)
+                        .load(url)
+                        .placeholder(R.drawable.placeholder)
+                        .error(R.drawable.placeholder)
+                        .into(ivPhoto);
+            } else {
+                ivPhoto.setImageResource(R.drawable.placeholder);
+            }
+        } else {
+            ivPhoto.setImageResource(R.drawable.placeholder);
+        }
+
+        favPlaceObj = new Place();
+        favPlaceObj.fsq_id = place.fsq_id;
+        favPlaceObj.name = place.name;
+
+// Use Place.Location
+        favPlaceObj.location = new Place.Location();
+        if (place.location != null) {
+            favPlaceObj.location.address = place.location.address;
+        }
+
+// Use Place.Category
+        favPlaceObj.categories = new java.util.ArrayList<>();
+        if (place.categories != null && !place.categories.isEmpty()) {
+            Place.Category cat = new Place.Category();
+            cat.name = place.categories.get(0).name;
+            favPlaceObj.categories.add(cat);
+        }
+
+// Use Place.Hours
+        favPlaceObj.hours = new Place.Hours();
+        if (place.hours != null && place.hours.open != null && !place.hours.open.isEmpty()) {
+            StringBuilder disp = new StringBuilder();
+            for (PlaceDetailResponse.Hours.Open open : place.hours.open) {
+                disp.append((open.day != null ? open.day : "")).append(" ").append((open.rendered_time != null ? open.rendered_time : "")).append("\n");
+            }
+            favPlaceObj.hours.display = disp.toString().trim();
+        }
+
+        favPlaceObj.offlineImagePath = null;
+
+        btnFavorite.setOnClickListener(v -> {
+            if (isFavorite) {
+                dbHelper.removeFavorite(place.fsq_id);
+                isFavorite = false;
+                Toast.makeText(this, "Dihapus dari favorit", Toast.LENGTH_SHORT).show();
+            } else {
+                dbHelper.addFavorite(favPlaceObj, namaKota);
+                isFavorite = true;
+                Toast.makeText(this, "Ditambah ke favorit", Toast.LENGTH_SHORT).show();
+            }
+            setFavoriteButton();
+        });
     }
 
-    private void loadPhoto(String fsqId) {
-        FoursquareApi api = RetrofitClient.getFoursquareApi();
-        api.getPlacePhotos(API_KEY, fsqId, 1)
-            .enqueue(new Callback<List<PhotoResponse>>() {
-                @Override
-                public void onResponse(Call<List<PhotoResponse>> call, Response<List<PhotoResponse>> response) {
-                    progressBar.setVisibility(View.GONE);
-                    if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                        PhotoResponse photo = response.body().get(0);
-                        String prefix = photo.prefix != null ? photo.prefix : "";
-                        String suffix = photo.suffix != null ? photo.suffix : "";
-                        if (!prefix.endsWith("/")) prefix += "/";
-                        if (!suffix.startsWith("/")) suffix = "/" + suffix;
-                        String url = prefix + "original" + suffix;
-                        Glide.with(DetailPlaceActivity.this)
-                                .load(url)
-                                .placeholder(R.drawable.placeholder)
-                                .error(R.drawable.placeholder)
-                                .into(ivPhoto);
-                    } else {
-                        ivPhoto.setImageResource(R.drawable.placeholder);
-                    }
-                }
-                @Override
-                public void onFailure(Call<List<PhotoResponse>> call, Throwable t) {
-                    progressBar.setVisibility(View.GONE);
-                    ivPhoto.setImageResource(R.drawable.placeholder);
-                    btnRetry.setVisibility(View.VISIBLE);
-                }
-            });
+    private void setFavoriteButton() {
+        btnFavorite.setText(isFavorite ? "Unfavorite" : "Favorite");
     }
 }

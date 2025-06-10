@@ -22,7 +22,7 @@ import com.example.dripz.R;
 import com.example.dripz.adapter.CityAdapter;
 import com.example.dripz.adapter.PlaceAdapter;
 import com.example.dripz.db.DBHelper;
-import com.example.dripz.db.DBHelper.PlaceCache;
+import com.example.dripz.model.PlaceCache;
 import com.example.dripz.model.City;
 import com.example.dripz.model.GeocodingResponse;
 import com.example.dripz.model.Place;
