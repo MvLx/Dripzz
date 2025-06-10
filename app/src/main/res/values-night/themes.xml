@@ -8,14 +8,11 @@
         <item name="colorSecondaryVariant">@color/brand_blue_dark</item>
         <item name="colorOnSecondary">@color/white</item>
         <!-- Backgrounds and Surfaces -->
-        <item name="android:colorBackground">@color/black</item>
-
+        <item name="android:colorBackground">#121212</item>
         <item name="colorSurface">@color/brand_blue_variant</item>
         <item name="colorOnSurface">@color/white</item>
-        <!-- Card shadow -->
+        <!-- Card custom attributes (neon effect) -->
 
-        <!-- Texts -->
-        <item name="android:textColorPrimary">@color/white</item>
-        <item name="android:textColorSecondary">@color/gray_text</item>
+        <item name="android:foreground">@drawable/card_ripple_neon</item>
     </style>
 </resources>

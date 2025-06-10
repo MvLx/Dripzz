@@ -40,12 +40,8 @@ public class PlaceAdapter extends RecyclerView.Adapter<PlaceAdapter.PlaceViewHol
     public void onBindViewHolder(@NonNull PlaceViewHolder holder, int position) {
         Place place = placeList.get(position);
         holder.tvName.setText(place.name);
-        holder.tvAddress.setText(place.location != null ? place.location.address : "-");
-        holder.tvCategory.setText(
-                place.categories != null && place.categories.size() > 0 ?
-                        place.categories.get(0).name : "-"
-        );
-        holder.ivPhoto.setImageResource(R.drawable.placeholder);
+
+        // Load foto dari API (Foursquare)
         FoursquareApi api = RetrofitClient.getFoursquareApi();
         api.getPlacePhotos(API_KEY, place.fsq_id, 1)
                 .enqueue(new Callback<List<PhotoResponse>>() {
@@ -55,13 +51,9 @@ public class PlaceAdapter extends RecyclerView.Adapter<PlaceAdapter.PlaceViewHol
                             PhotoResponse photo = response.body().get(0);
                             String prefix = photo.prefix != null ? photo.prefix : "";
                             String suffix = photo.suffix != null ? photo.suffix : "";
-                            // Pastikan prefix ada slash di akhir, suffix ada slash di awal (Foursquare biasanya sudah benar, tapi jaga-jaga)
                             if (!prefix.endsWith("/")) prefix += "/";
                             if (!suffix.startsWith("/")) suffix = "/" + suffix;
                             String photoUrl = prefix + "original" + suffix;
-                            android.util.Log.d("PHOTO", "Photo URL: " + photoUrl);
-
-                            // Cek context valid sebelum load Glide (optional, jaga-jaga)
                             if (holder.itemView.getContext() != null) {
                                 Glide.with(holder.itemView.getContext())
                                         .load(photoUrl)
@@ -71,15 +63,14 @@ public class PlaceAdapter extends RecyclerView.Adapter<PlaceAdapter.PlaceViewHol
                             }
                         } else {
                             holder.ivPhoto.setImageResource(R.drawable.placeholder);
-                            android.util.Log.e("PHOTO", "Photo API empty or not successful: " + response.message());
                         }
                     }
                     @Override
                     public void onFailure(Call<List<PhotoResponse>> call, Throwable t) {
                         holder.ivPhoto.setImageResource(R.drawable.placeholder);
-                        android.util.Log.e("PHOTO", "API call failed: " + t.getMessage());
                     }
                 });
+
         holder.itemView.setOnClickListener(v -> {
             Context ctx = v.getContext();
             Intent intent = new Intent(ctx, com.example.dripz.ui.detail.DetailPlaceActivity.class);
@@ -99,14 +90,12 @@ public class PlaceAdapter extends RecyclerView.Adapter<PlaceAdapter.PlaceViewHol
     }
 
     public static class PlaceViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvAddress, tvCategory;
+        TextView tvName;
         ImageView ivPhoto;
         public PlaceViewHolder(@NonNull View itemView) {
             super(itemView);
             ivPhoto = itemView.findViewById(R.id.ivPhoto);
             tvName = itemView.findViewById(R.id.tvName);
-            tvAddress = itemView.findViewById(R.id.tvAddress);
-            tvCategory = itemView.findViewById(R.id.tvCategory);
         }
     }
 }

@@ -9,13 +9,10 @@
         <item name="colorOnSecondary">@color/white</item>
         <!-- Backgrounds and Surfaces -->
         <item name="android:colorBackground">@color/white</item>
-
         <item name="colorSurface">@color/white</item>
         <item name="colorOnSurface">@color/brand_blue_variant</item>
-        <!-- Card shadow -->
+        <!-- Card custom attributes -->
 
-        <!-- Texts -->
-        <item name="android:textColorPrimary">@color/brand_blue_variant</item>
-        <item name="android:textColorSecondary">@color/gray_text</item>
+        <item name="android:foreground">@drawable/card_ripple_neon</item>
     </style>
 </resources>

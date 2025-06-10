@@ -57,7 +57,7 @@ public class HomeFragment extends Fragment {
 
         placeAdapter = new PlaceAdapter(new ArrayList<>());
         rvPlaces.setAdapter(placeAdapter);
-        rvPlaces.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvPlaces.setLayoutManager(new LinearLayoutManager(getContext())); // satu kolom
 
         cityAdapter = new CityAdapter(cityList, city -> {
             etLocation.setText(city.name);
