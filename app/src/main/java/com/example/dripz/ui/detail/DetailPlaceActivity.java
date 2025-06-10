@@ -21,6 +21,8 @@ import com.example.dripz.network.FoursquareApi;
 import com.example.dripz.network.RetrofitClient;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -38,6 +40,7 @@ public class DetailPlaceActivity extends AppCompatActivity {
     private String namaKota = "";
 
     private final String API_KEY = "fsq3a4FzRMpB8kLrNHnB8bJgY+nTbIDEOtk7088yl5pCI4A=";
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,19 +108,20 @@ public class DetailPlaceActivity extends AppCompatActivity {
         }
         tvHours.setText(jamBuka);
 
-        // Load photo
-        if (place.photos != null && !place.photos.isEmpty()) {
+        // Load photo (logika sama dengan HomeFragment)
+        String gambarUrl = "";
+        if (place.photos != null && !place.photos.isEmpty() && place.photos.get(0) != null) {
             Photo photo = place.photos.get(0);
             if (photo.prefix != null && photo.suffix != null) {
-                String url = photo.prefix + "original" + photo.suffix;
-                Glide.with(this)
-                        .load(url)
-                        .placeholder(R.drawable.placeholder)
-                        .error(R.drawable.placeholder)
-                        .into(ivPhoto);
-            } else {
-                ivPhoto.setImageResource(R.drawable.placeholder);
+                gambarUrl = photo.prefix + "original" + photo.suffix;
             }
+        }
+        if (!gambarUrl.isEmpty()) {
+            Glide.with(this)
+                    .load(gambarUrl)
+                    .placeholder(R.drawable.placeholder)
+                    .error(R.drawable.placeholder)
+                    .into(ivPhoto);
         } else {
             ivPhoto.setImageResource(R.drawable.placeholder);
         }
@@ -126,13 +130,11 @@ public class DetailPlaceActivity extends AppCompatActivity {
         favPlaceObj.fsq_id = place.fsq_id;
         favPlaceObj.name = place.name;
 
-// Use Place.Location
         favPlaceObj.location = new Place.Location();
         if (place.location != null) {
             favPlaceObj.location.address = place.location.address;
         }
 
-// Use Place.Category
         favPlaceObj.categories = new java.util.ArrayList<>();
         if (place.categories != null && !place.categories.isEmpty()) {
             Place.Category cat = new Place.Category();
@@ -140,7 +142,6 @@ public class DetailPlaceActivity extends AppCompatActivity {
             favPlaceObj.categories.add(cat);
         }
 
-// Use Place.Hours
         favPlaceObj.hours = new Place.Hours();
         if (place.hours != null && place.hours.open != null && !place.hours.open.isEmpty()) {
             StringBuilder disp = new StringBuilder();
@@ -153,20 +154,33 @@ public class DetailPlaceActivity extends AppCompatActivity {
         favPlaceObj.offlineImagePath = null;
 
         btnFavorite.setOnClickListener(v -> {
-            if (isFavorite) {
-                dbHelper.removeFavorite(place.fsq_id);
-                isFavorite = false;
-                Toast.makeText(this, "Dihapus dari favorit", Toast.LENGTH_SHORT).show();
-            } else {
-                dbHelper.addFavorite(favPlaceObj, namaKota);
-                isFavorite = true;
-                Toast.makeText(this, "Ditambah ke favorit", Toast.LENGTH_SHORT).show();
-            }
-            setFavoriteButton();
+            executor.execute(() -> {
+                if (isFavorite) {
+                    dbHelper.removeFavorite(place.fsq_id);
+                    isFavorite = false;
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "Dihapus dari favorit", Toast.LENGTH_SHORT).show();
+                        setFavoriteButton();
+                    });
+                } else {
+                    dbHelper.addFavorite(favPlaceObj, namaKota);
+                    isFavorite = true;
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "Ditambah ke favorit", Toast.LENGTH_SHORT).show();
+                        setFavoriteButton();
+                    });
+                }
+            });
         });
     }
 
     private void setFavoriteButton() {
         btnFavorite.setText(isFavorite ? "Unfavorite" : "Favorite");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        executor.shutdownNow();
     }
 }

@@ -26,9 +26,6 @@ import com.example.dripz.model.PlaceCache;
 import com.example.dripz.model.City;
 import com.example.dripz.model.GeocodingResponse;
 import com.example.dripz.model.Place;
-import com.example.dripz.model.Location;
-import com.example.dripz.model.Category;
-import com.example.dripz.model.Hours;
 import com.example.dripz.model.PlacesResponse;
 import com.example.dripz.network.FoursquareApi;
 import com.example.dripz.network.GeocodingApi;
@@ -38,6 +35,8 @@ import com.example.dripz.util.ImageDownloader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import retrofit2.Call;
@@ -66,6 +65,8 @@ public class HomeFragment extends Fragment {
     private SharedPreferences themePrefs;
     private static final String PREFS_NAME = "theme_pref";
     private static final String PREF_KEY_DARK = "is_dark";
+
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -96,6 +97,13 @@ public class HomeFragment extends Fragment {
 
         // Set theme dari SharedPreferences saat fragment pertama kali dibuka
         applySavedTheme();
+
+        // Contoh background thread saat aplikasi dibuka (prefetch/sync)
+        executor.execute(() -> {
+            // Simulasi proses berat
+            Log.d("BGThread", "Background thread HomeFragment berjalan");
+            // Misal: sync cache, prefetch, dsb
+        });
 
         btnSearch.setOnClickListener(v -> {
             String locationName = etLocation.getText().toString().trim();
@@ -180,7 +188,6 @@ public class HomeFragment extends Fragment {
                                 Toast.makeText(requireContext(), "Daerah tidak ditemukan", Toast.LENGTH_SHORT).show();
                                 Log.e("Geo", "Geo response: " + response.body());
                                 btnRetryHome.setVisibility(View.VISIBLE);
-                                // Load offline jika gagal geo
                                 loadPlacesFromDb();
                             }
                         }
@@ -191,13 +198,11 @@ public class HomeFragment extends Fragment {
                         Toast.makeText(requireContext(), "Gagal mencari lokasi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                         Log.e("Geo", "Geo error: ", t);
                         btnRetryHome.setVisibility(View.VISIBLE);
-                        // Load offline jika gagal geo
                         loadPlacesFromDb();
                     }
                 });
     }
 
-    // Perubahan: menambahkan param namaKota supaya bisa diisi ke DB
     private void searchPlaces(String latlon, String categories, int limit, String namaKota) {
         if (categories == null) categories = "";
         api.searchPlaces(API_KEY, latlon, categories, limit)
@@ -208,8 +213,8 @@ public class HomeFragment extends Fragment {
                         if (response.isSuccessful() && response.body() != null && response.body().results != null && !response.body().results.isEmpty()) {
                             List<Place> places = response.body().results;
                             placeAdapter.setData(places);
-                            // Simpan ke SQLite dan download gambar
-                            savePlacesToDb(places, namaKota);
+                            // Simpan ke SQLite dan download gambar di background
+                            executor.execute(() -> savePlacesToDb(places, namaKota));
                         } else {
                             if (isAdded()) {
                                 Toast.makeText(requireContext(), "Data tidak ditemukan", Toast.LENGTH_SHORT).show();
@@ -225,13 +230,11 @@ public class HomeFragment extends Fragment {
                         Toast.makeText(requireContext(), "Gagal load data: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                         Log.e("FSQ", "FSQ error: ", t);
                         btnRetryHome.setVisibility(View.VISIBLE);
-                        // Load offline jika gagal API
                         loadPlacesFromDb();
                     }
                 });
     }
 
-    // Simpan places ke SQLite, download gambar satu per satu
     private void savePlacesToDb(List<Place> places, String namaKota) {
         Context ctx = getContext();
         if (ctx == null) return;
@@ -249,7 +252,7 @@ public class HomeFragment extends Fragment {
             final String gambarUrl = (place.photos != null && !place.photos.isEmpty() && place.photos.get(0) != null)
                     ? place.photos.get(0).getUrl() : "";
             final String fileName = "offline_img_" + (System.currentTimeMillis() + done.get()) + ".jpg";
-            final String finalNamaKota = namaKota; // agar bisa digunakan di callback
+            final String finalNamaKota = namaKota;
 
             ImageDownloader.download(ctx, gambarUrl, fileName, new ImageDownloader.DownloadCallback() {
                 @Override
@@ -272,43 +275,42 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    // Load data dari SQLite dan tampilkan ke RecyclerView
     private void loadPlacesFromDb() {
-        Context ctx = getContext();
-        if (ctx == null) return;
-        DBHelper dbHelper = new DBHelper(ctx);
-        List<PlaceCache> placeCaches = dbHelper.getAllPlaces();
+        executor.execute(() -> {
+            Context ctx = getContext();
+            if (ctx == null) return;
+            DBHelper dbHelper = new DBHelper(ctx);
+            List<PlaceCache> placeCaches = dbHelper.getAllPlaces();
 
-        if (placeCaches.isEmpty()) {
-            Toast.makeText(ctx, "Tidak ada data offline", Toast.LENGTH_SHORT).show();
-            placeAdapter.setData(new ArrayList<>()); // Kosongkan adapter
-            return;
-        }
+            List<Place> places = new ArrayList<>();
+            for (PlaceCache pc : placeCaches) {
+                Place place = new Place();
+                place.name = pc.namaTempat;
+                place.location = new Place.Location();
+                place.location.address = pc.alamatJalan;
+                place.categories = new ArrayList<>();
+                Place.Category cat = new Place.Category();
+                cat.name = pc.deskripsi;
+                place.categories.add(cat);
+                place.hours = new Place.Hours();
+                place.hours.display = pc.jamBuka;
+                place.offlineImagePath = pc.gambarPath;
+                places.add(place);
+            }
+            requireActivity().runOnUiThread(() -> {
+                placeAdapter.setData(places);
+                if (places.isEmpty()) {
+                    Toast.makeText(ctx, "Tidak ada data offline", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(ctx, "Menampilkan data offline", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+    }
 
-        // Convert PlaceCache ke Place agar bisa dipakai di adapter
-        List<Place> places = new ArrayList<>();
-        for (PlaceCache pc : placeCaches) {
-            Place place = new Place();
-            place.name = pc.namaTempat;
-
-            // Use Place.Location
-            place.location = new Place.Location();
-            place.location.address = pc.alamatJalan;
-
-            // Use Place.Category
-            place.categories = new ArrayList<>();
-            Place.Category cat = new Place.Category();
-            cat.name = pc.deskripsi;
-            place.categories.add(cat);
-
-            // Use Place.Hours
-            place.hours = new Place.Hours();
-            place.hours.display = pc.jamBuka;
-
-            place.offlineImagePath = pc.gambarPath;
-            places.add(place);
-        }
-        placeAdapter.setData(places);
-        Toast.makeText(ctx, "Menampilkan data offline", Toast.LENGTH_SHORT).show();
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        executor.shutdownNow();
     }
 }

@@ -52,5 +52,11 @@
             android:layout_height="wrap_content"
             android:text="Favorite"
             android:layout_marginTop="16dp"/>
+        <ProgressBar
+            android:id="@+id/progressBarDetail"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_gravity="center"
+            android:visibility="gone" />
     </LinearLayout>
 </ScrollView>
