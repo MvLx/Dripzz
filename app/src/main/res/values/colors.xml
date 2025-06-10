@@ -1,10 +1,19 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Brand/Primary Colors -->
+    <color name="brand_blue">#247CFE</color>
+    <color name="brand_blue_variant">#1346A5</color>
+    <color name="brand_blue_dark">#1346A5</color>
+    <color name="brand_blue_light">#E3F0FF</color>
+    <!-- Secondary / Accent -->
+    <color name="accent">#FFC107</color>
+    <!-- Basics -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="gray_text">#8A8A8A</color>
+    <color name="gray_bg">#F8F9FA</color>
+    <color name="gray_card_shadow">#E3EBFA</color>
+    <!-- Card shadow & outline -->
+    <color name="card_shadow">#E3EBFA</color>
+    <!-- Rating -->
+    <color name="rating_star">#247CFE</color>
 </resources>

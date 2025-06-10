@@ -49,6 +49,7 @@ dependencies {
     annotationProcessor ("com.github.bumptech.glide:compiler:4.16.0")
     implementation ("com.squareup.okhttp3:logging-interceptor:4.9.3")
     implementation ("androidx.recyclerview:recyclerview:1.3.2")
+    implementation ("com.google.android.material:material:1.10.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
