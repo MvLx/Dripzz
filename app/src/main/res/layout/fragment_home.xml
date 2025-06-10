@@ -1,10 +1,20 @@
-<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
+    <!-- Tombol ubah mode (light/dark) -->
+    <Button
+        android:id="@+id/btnToggleTheme"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ubah Mode"
+        android:layout_gravity="end"
+        android:backgroundTint="?attr/colorPrimary"
+        android:textColor="?android:textColorPrimaryInverse"
+        android:layout_marginBottom="12dp"/>
 
     <EditText
         android:id="@+id/etLocation"

@@ -14,5 +14,7 @@
         <!-- Card custom attributes -->
 
         <item name="android:foreground">@drawable/card_ripple_neon</item>
+
+        <item name="android:textColorPrimary">#222222</item>
     </style>
 </resources>

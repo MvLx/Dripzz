@@ -1,5 +1,6 @@
 package com.example.dripz.ui.home;
 
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -8,6 +9,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -29,7 +32,7 @@ import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
     private EditText etLocation;
-    private Button btnSearch, btnRetryHome;
+    private Button btnSearch, btnRetryHome, btnToggleTheme;
     private RecyclerView rvCities, rvPlaces;
     private PlaceAdapter placeAdapter;
     private CityAdapter cityAdapter;
@@ -52,15 +55,17 @@ public class HomeFragment extends Fragment {
         etLocation = view.findViewById(R.id.etLocation);
         btnSearch = view.findViewById(R.id.btnSearch);
         btnRetryHome = view.findViewById(R.id.btnRetryHome);
+        btnToggleTheme = view.findViewById(R.id.btnToggleTheme);
         rvCities = view.findViewById(R.id.rvCities);
         rvPlaces = view.findViewById(R.id.rvPlaces);
 
         placeAdapter = new PlaceAdapter(new ArrayList<>());
         rvPlaces.setAdapter(placeAdapter);
-        rvPlaces.setLayoutManager(new LinearLayoutManager(getContext())); // satu kolom
+        rvPlaces.setLayoutManager(new LinearLayoutManager(getContext()));
 
         cityAdapter = new CityAdapter(cityList, city -> {
             etLocation.setText(city.name);
+            btnRetryHome.setVisibility(View.GONE);
             searchByLocationName(city.name);
         });
         rvCities.setAdapter(cityAdapter);
@@ -81,13 +86,22 @@ public class HomeFragment extends Fragment {
 
         btnRetryHome.setOnClickListener(v -> {
             btnRetryHome.setVisibility(View.GONE);
-            // Default: cari kota pertama di daftar
             if (!cityList.isEmpty()) {
                 searchByLocationName(cityList.get(0).name);
             }
         });
 
-        // Optional: load default city on start
+        setThemeButtonAppearance();
+
+        btnToggleTheme.setOnClickListener(v -> {
+            int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+            if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+            } else {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+            }
+        });
+
         if (!cityList.isEmpty()) {
             searchByLocationName(cityList.get(0).name);
         }
@@ -95,24 +109,48 @@ public class HomeFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        setThemeButtonAppearance();
+    }
+
+    private void setThemeButtonAppearance() {
+        if (btnToggleTheme == null || getContext() == null) return;
+        int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
+            btnToggleTheme.setText("Ubah Mode");
+            btnToggleTheme.setBackgroundTintList(ContextCompat.getColorStateList(requireContext(), android.R.color.transparent));
+            btnToggleTheme.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.white));
+        } else {
+            btnToggleTheme.setText("Ubah Mode");
+            btnToggleTheme.setBackgroundTintList(ContextCompat.getColorStateList(requireContext(), android.R.color.white));
+            btnToggleTheme.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black));
+        }
+    }
+
     private void searchByLocationName(String locationName) {
         geoApi.searchLocation(locationName, "json", 1)
                 .enqueue(new Callback<List<GeocodingResponse>>() {
                     @Override
                     public void onResponse(Call<List<GeocodingResponse>> call, Response<List<GeocodingResponse>> response) {
+                        if (!isAdded()) return;
                         if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                             GeocodingResponse geo = response.body().get(0);
                             String latlon = geo.lat + "," + geo.lon;
                             searchPlaces(latlon, DEFAULT_CATEGORY, 20);
                         } else {
-                            Toast.makeText(getContext(), "Daerah tidak ditemukan", Toast.LENGTH_SHORT).show();
-                            Log.e("Geo", "Geo response: " + response.body());
-                            btnRetryHome.setVisibility(View.VISIBLE);
+                            if (isAdded()) {
+                                Toast.makeText(requireContext(), "Daerah tidak ditemukan", Toast.LENGTH_SHORT).show();
+                                Log.e("Geo", "Geo response: " + response.body());
+                                btnRetryHome.setVisibility(View.VISIBLE);
+                            }
                         }
                     }
                     @Override
                     public void onFailure(Call<List<GeocodingResponse>> call, Throwable t) {
-                        Toast.makeText(getContext(), "Gagal mencari lokasi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        if (!isAdded()) return;
+                        Toast.makeText(requireContext(), "Gagal mencari lokasi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                         Log.e("Geo", "Geo error: ", t);
                         btnRetryHome.setVisibility(View.VISIBLE);
                     }
@@ -125,17 +163,21 @@ public class HomeFragment extends Fragment {
                 .enqueue(new Callback<PlacesResponse>() {
                     @Override
                     public void onResponse(Call<PlacesResponse> call, Response<PlacesResponse> response) {
+                        if (!isAdded()) return;
                         if (response.isSuccessful() && response.body() != null && response.body().results != null && !response.body().results.isEmpty()) {
                             placeAdapter.setData(response.body().results);
                         } else {
-                            Toast.makeText(getContext(), "Data tidak ditemukan", Toast.LENGTH_SHORT).show();
-                            Log.e("FSQ", "FSQ response: " + response.body());
-                            btnRetryHome.setVisibility(View.VISIBLE);
+                            if (isAdded()) {
+                                Toast.makeText(requireContext(), "Data tidak ditemukan", Toast.LENGTH_SHORT).show();
+                                Log.e("FSQ", "FSQ response: " + response.body());
+                                btnRetryHome.setVisibility(View.VISIBLE);
+                            }
                         }
                     }
                     @Override
                     public void onFailure(Call<PlacesResponse> call, Throwable t) {
-                        Toast.makeText(getContext(), "Gagal load data: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        if (!isAdded()) return;
+                        Toast.makeText(requireContext(), "Gagal load data: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                         Log.e("FSQ", "FSQ error: ", t);
                         btnRetryHome.setVisibility(View.VISIBLE);
                     }
